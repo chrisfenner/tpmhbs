@@ -10,10 +10,12 @@ required for LMS and XMSS. These estimates are intended for ballpark/relative
 estimation of the feasibility of the various NIST-approved parameter sets on
 current TPM hardware. These estimates may get better over time.
 
-## How to install this tool
+## How to build this tool
 
 ```console
-go install github.com/chrisfenner/tpmhbs
+git clone https://github.com/chrisfenner/tpmhbs
+cd tpmhbs
+go build .
 ```
 
 ## How to use this tool
@@ -23,3 +25,5 @@ On a system with a TPM:
 ```console
 tpmhbs [--sort_by={keygen, signing, size, name}]
 ```
+
+On Linux, this command may need to be run as sudo.

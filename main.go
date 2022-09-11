@@ -147,7 +147,7 @@ func hash(tpm transport.TPM, count int) (*int64, error) {
 
 func getHashPerformance(tpm transport.TPM) (float64, error) {
 	results := make([]float64, 17)
-	count := 1000
+	count := 10
 	// sum_0_to_17 = 153
 	bar := progressbar.New(153 * count)
 	defer bar.Close()
