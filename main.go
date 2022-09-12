@@ -77,7 +77,7 @@ type tpmInfo struct {
 }
 
 func (info tpmInfo) String() string {
-	return fmt.Sprintf("%v %v: TPM 2.0 rev %v (firmware %v)\n", info.manufacturer, info.model, info.specVersion, info.fwVersion)
+	return fmt.Sprintf("%v %v: TPM 2.0 rev %v (firmware %v)", info.manufacturer, info.model, info.specVersion, info.fwVersion)
 }
 
 func getCap(tpm transport.TPM, property tpm2.TPMPT) ([]byte, error) {
@@ -251,11 +251,13 @@ func printEstimates(info tpmInfo, hps float64, sortBy estimateOrdering) {
 	fmt.Printf("Estimated (SHA256) hashes per second: %v\n", hps)
 	fmt.Println(table)
 	csv := tw.RenderCSV()
+	fmt.Println(csv)
 	wd, _ := os.Getwd()
 	filename := path.Join(wd, fmt.Sprintf("tpmhbs.%v.%v.%v.csv", version, info.manufacturer, info.model))
 	f, err := os.Create(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Could not create %v: %v\n", filename, err)
+		return
 	}
 	defer f.Close()
 	if _, err := f.Write([]byte(csv)); err != nil {
