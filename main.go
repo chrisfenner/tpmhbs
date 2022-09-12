@@ -254,7 +254,7 @@ func printEstimates(info tpmInfo, hps float64, sortBy estimateOrdering) {
 	wd, _ := os.Getwd()
 	filename := path.Join(wd, fmt.Sprintf("tpmhbs.%v.%v.%v.csv", version, info.manufacturer, info.model))
 	if err := os.WriteFile(filename, []byte(csv), 0666); err != nil {
-		fmt.Fprintf(os.Stderr, "Could not write CSV file to %v.\n", filename)
+		fmt.Fprintf(os.Stderr, "Could not write CSV file to %v: %v\n", filename, err)
 	} else {
 		fmt.Printf("Wrote CSV data to %v.\n", filename)
 	}
