@@ -125,15 +125,15 @@ func getTPMInfo(tpm transport.TPM) (*tpmInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	id2, err := getCap(tpm, tpm2.TPMPTVendorString1)
+	id2, err := getCap(tpm, tpm2.TPMPTVendorString2)
 	if err != nil {
 		return nil, err
 	}
-	id3, err := getCap(tpm, tpm2.TPMPTVendorString1)
+	id3, err := getCap(tpm, tpm2.TPMPTVendorString3)
 	if err != nil {
 		return nil, err
 	}
-	id4, err := getCap(tpm, tpm2.TPMPTVendorString1)
+	id4, err := getCap(tpm, tpm2.TPMPTVendorString4)
 	if err != nil {
 		return nil, err
 	}
@@ -181,8 +181,8 @@ func hash(tpm transport.TPM, count int) (*int64, error) {
 func getHashPerformance(tpm transport.TPM) (float64, error) {
 	results := make([]float64, 17)
 	count := 10
-	// sum_0_to_17 = 153
-	bar := progressbar.New(153 * count)
+	// sum_0_to_16 = 136
+	bar := progressbar.New(136 * count)
 	defer bar.Close()
 	for hashBlocks := range results {
 		for j := 0; j < count; j++ {
