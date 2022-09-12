@@ -54,8 +54,8 @@ func mainErr() error {
 	if err != nil {
 		return fmt.Errorf("could not get TPM info: %v", err)
 	}
+	fmt.Printf("%v\n", info)
 
-	fmt.Printf("TPM 2.0 rev %v (%v firmware %v)\n", info.specVersion, info.manufacturer, info.fwVersion)
 	hps, err := getHashPerformance(tpm)
 	if err != nil {
 		return fmt.Errorf("could not get SHA256 performance: %v", err)
@@ -73,6 +73,12 @@ type tpmInfo struct {
 	manufacturer string
 	fwVersion    string
 	specVersion  string
+	vendorID     string
+	model        string
+}
+
+func (info tpmInfo) String() string {
+	return fmt.Sprintf("%v (%v) %v: TPM 2.0 rev %v (firmware %v)\n", info.manufacturer, info.vendorID, info.model, info.specVersion, info.fwVersion)
 }
 
 func getCap(tpm transport.TPM, property tpm2.TPMPT) ([]byte, error) {
@@ -115,11 +121,38 @@ func getTPMInfo(tpm transport.TPM) (*tpmInfo, error) {
 		return nil, err
 	}
 	revision := binary.BigEndian.Uint32(specVersion)
+	id1, err := getCap(tpm, tpm2.TPMPTVendorString1)
+	if err != nil {
+		return nil, err
+	}
+	id2, err := getCap(tpm, tpm2.TPMPTVendorString1)
+	if err != nil {
+		return nil, err
+	}
+	id3, err := getCap(tpm, tpm2.TPMPTVendorString1)
+	if err != nil {
+		return nil, err
+	}
+	id4, err := getCap(tpm, tpm2.TPMPTVendorString1)
+	if err != nil {
+		return nil, err
+	}
+	id := make([]byte, 0, 16)
+	id = append(id, id1...)
+	id = append(id, id2...)
+	id = append(id, id3...)
+	id = append(id, id4...)
+	model, err := getCap(tpm, tpm2.TPMPTVendorTPMType)
+	if err != nil {
+		return nil, err
+	}
 
 	return &tpmInfo{
 		manufacturer: fmt.Sprintf("%s", string(mfr)),
 		fwVersion:    fmt.Sprintf("%0x%0x", fw1, fw2),
 		specVersion:  fmt.Sprintf("%v.%v", revision/100, revision%100),
+		vendorID:     string(id),
+		model:        fmt.Sprintf("%0x", model),
 	}, nil
 }
 
