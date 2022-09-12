@@ -251,10 +251,10 @@ func printEstimates(info tpmInfo, hps float64, sortBy estimateOrdering) {
 	fmt.Printf("Estimated (SHA256) hashes per second: %v\n", hps)
 	fmt.Println(table)
 	csv := tw.RenderCSV()
-	filename := fmt.Sprintf("tpmhbs.%v.%v.%v.csv", version, info.manufacturer, info.model)
 	wd, _ := os.Getwd()
-	if err := os.WriteFile(path.Join(wd, filename), []byte(csv), 0666); err != nil {
-		fmt.Fprintf(os.Stderr, "Could not write CSV file.\n")
+	filename := path.Join(wd, fmt.Sprintf("tpmhbs.%v.%v.%v.csv", version, info.manufacturer, info.model))
+	if err := os.WriteFile(filename, []byte(csv), 0666); err != nil {
+		fmt.Fprintf(os.Stderr, "Could not write CSV file to %v.\n", filename)
 	} else {
 		fmt.Printf("Wrote CSV data to %v.\n", filename)
 	}
