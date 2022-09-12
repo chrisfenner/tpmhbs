@@ -16,6 +16,7 @@ import (
 )
 
 var (
+	version      = "1.0"
 	useSimulator = flag.Bool("simulator", false, "use the TPM simulator")
 	sortBy       = flag.String("sort_by", "keygen", "one of: [keygen, signing, size, name]")
 )
@@ -54,14 +55,12 @@ func mainErr() error {
 	if err != nil {
 		return fmt.Errorf("could not get TPM info: %v", err)
 	}
-	fmt.Printf("%v\n", info)
 
 	hps, err := getHashPerformance(tpm)
 	if err != nil {
 		return fmt.Errorf("could not get SHA256 performance: %v", err)
 	}
-	fmt.Printf("Estimated (SHA256) hashes per second: %v\n", hps)
-	printEstimates(hps, ordering)
+	printEstimates(*info, hps, ordering)
 	return nil
 }
 
@@ -71,14 +70,13 @@ func getTPM(sim bool) (transport.TPMCloser, error) {
 
 type tpmInfo struct {
 	manufacturer string
+	model        string
 	fwVersion    string
 	specVersion  string
-	vendorID     string
-	model        string
 }
 
 func (info tpmInfo) String() string {
-	return fmt.Sprintf("%v (%v) %v: TPM 2.0 rev %v (firmware %v)\n", info.manufacturer, info.vendorID, info.model, info.specVersion, info.fwVersion)
+	return fmt.Sprintf("%v %v: TPM 2.0 rev %v (firmware %v)\n", info.manufacturer, info.model, info.specVersion, info.fwVersion)
 }
 
 func getCap(tpm transport.TPM, property tpm2.TPMPT) ([]byte, error) {
@@ -121,38 +119,33 @@ func getTPMInfo(tpm transport.TPM) (*tpmInfo, error) {
 		return nil, err
 	}
 	revision := binary.BigEndian.Uint32(specVersion)
-	id1, err := getCap(tpm, tpm2.TPMPTVendorString1)
+	model1, err := getCap(tpm, tpm2.TPMPTVendorString1)
 	if err != nil {
 		return nil, err
 	}
-	id2, err := getCap(tpm, tpm2.TPMPTVendorString2)
+	model2, err := getCap(tpm, tpm2.TPMPTVendorString2)
 	if err != nil {
 		return nil, err
 	}
-	id3, err := getCap(tpm, tpm2.TPMPTVendorString3)
+	model3, err := getCap(tpm, tpm2.TPMPTVendorString3)
 	if err != nil {
 		return nil, err
 	}
-	id4, err := getCap(tpm, tpm2.TPMPTVendorString4)
+	model4, err := getCap(tpm, tpm2.TPMPTVendorString4)
 	if err != nil {
 		return nil, err
 	}
-	id := make([]byte, 0, 16)
-	id = append(id, id1...)
-	id = append(id, id2...)
-	id = append(id, id3...)
-	id = append(id, id4...)
-	model, err := getCap(tpm, tpm2.TPMPTVendorTPMType)
-	if err != nil {
-		return nil, err
-	}
+	model := make([]byte, 0, 16)
+	model = append(model, model1...)
+	model = append(model, model2...)
+	model = append(model, model3...)
+	model = append(model, model4...)
 
 	return &tpmInfo{
 		manufacturer: fmt.Sprintf("%s", string(mfr)),
 		fwVersion:    fmt.Sprintf("%0x%0x", fw1, fw2),
 		specVersion:  fmt.Sprintf("%v.%v", revision/100, revision%100),
-		vendorID:     string(id),
-		model:        fmt.Sprintf("%0x", model),
+		model:        string(model),
 	}, nil
 }
 
@@ -215,7 +208,7 @@ const (
 	byKeygenWork
 )
 
-func printEstimates(hps float64, sortBy estimateOrdering) {
+func printEstimates(info tpmInfo, hps float64, sortBy estimateOrdering) {
 	algs := nistApprovedParameters
 	sort.Slice(algs, func(i, j int) bool {
 		switch sortBy {
@@ -235,11 +228,9 @@ func printEstimates(hps float64, sortBy estimateOrdering) {
 	})
 
 	tw := table.NewWriter()
-	tw.SetOutputMirror(os.Stdout)
 	tw.AppendHeader(table.Row{
 		"Friendly Name", "W (bits)", "Signatures", "Sig Size", "Est. Keygen", "Est. Signing",
 	})
-
 	for _, alg := range algs {
 		keygen := time.Duration(float64(alg.KeygenWork) / hps * 1000000000)
 		signing := time.Duration(float64(alg.SigWork) / hps * 1000000000)
@@ -252,6 +243,17 @@ func printEstimates(hps float64, sortBy estimateOrdering) {
 			signing,
 		})
 	}
-	tw.Render()
+	table := tw.Render()
 
+	fmt.Printf("tpmhbs version %v\n", version)
+	fmt.Printf("%v\n", info)
+	fmt.Printf("Estimated (SHA256) hashes per second: %v\n", hps)
+	fmt.Println(table)
+	csv := tw.RenderCSV()
+	filename := fmt.Sprintf("%v.%v.csv", info.manufacturer, info.model)
+	if err := os.WriteFile(filename, []byte(csv), 0666); err != nil {
+		fmt.Fprintf(os.Stderr, "Could not write CSV file.\n")
+	} else {
+		fmt.Printf("Wrote CSV data to %v.\n", filename)
+	}
 }
