@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path"
 	"sort"
 	"time"
 
@@ -250,19 +249,4 @@ func printEstimates(info tpmInfo, hps float64, sortBy estimateOrdering) {
 	fmt.Printf("%v\n", info)
 	fmt.Printf("Estimated (SHA256) hashes per second: %v\n", hps)
 	fmt.Println(table)
-	csv := tw.RenderCSV()
-	fmt.Println(csv)
-	wd, _ := os.Getwd()
-	filename := path.Join(wd, fmt.Sprintf("tpmhbs.%v.%v.%v.csv", version, info.manufacturer, info.model))
-	f, err := os.Create(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not create %v: %v\n", filename, err)
-		return
-	}
-	defer f.Close()
-	if _, err := f.Write([]byte(csv)); err != nil {
-		fmt.Fprintf(os.Stderr, "Could not write CSV to %v: %v\n", filename, err)
-	} else {
-		fmt.Printf("Wrote CSV data to %v.\n", filename)
-	}
 }
